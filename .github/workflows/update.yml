@@ -1,26 +1,26 @@
 # .github/workflows/update.yml
 
-name: Daily Limiteds Update
+name: Weekly Roblox Limiteds Update
 
-# Trigger manually or every day at 6 AM UTC
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 6 * * *'
+    - cron: '0 6 * * *'   # every day at 6 AM UTC
 
-# Grant this workflow write access so it can push commits
 permissions:
-  contents: write
+  contents: write        # allow the job to commit & push
 
 jobs:
   update:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v3
         with:
+          token: ${{ secrets.GH_PAT }}
           fetch-depth: 0
+          persist-credentials: true
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -28,21 +28,21 @@ jobs:
           python-version: '3.x'
 
       - name: Install dependencies
-        run: pip install requests
+        run: |
+          pip install requests beautifulsoup4
 
-      - name: Fetch latest limiteds
+      - name: Fetch this week’s limiteds
         run: python fetch_limiteds.py
 
-      - name: Commit new posts
+      - name: Commit updated posts
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add _posts
-          git commit -m "chore: update limiteds $(date -u +'%Y-%m-%d')" || echo "No new posts"
+          git commit -m "chore: refresh weekly limiteds $(date -u +'%Y-%m-%d')" || echo "No changes to commit"
 
-      - name: Push changes using PAT
+      - name: Push changes
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
         run: |
-          git remote set-url origin https://x-access-token:${GH_PAT}@github.com/${{ github.repository }}.git
-          git push
+          git push https://x-access-token:${GH_PAT}@github.com/${{ github.repository }}.git HEAD:main
