@@ -1,9 +1,9 @@
 name: Daily Limiteds Update
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:      # manual trigger
   schedule:
-    - cron: '0 6 * * *'
+    - cron: '0 6 * * *'   # daily at 6 AM UTC
 
 jobs:
   update:
@@ -11,11 +11,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          persist-credentials: true
-          fetch-depth: 0
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -35,5 +31,8 @@ jobs:
           git add _posts
           git commit -m "chore: update limiteds $(date -u +'%Y-%m-%d')" || echo "No new posts"
 
-      - name: Push changes
-        run: git push
+      - name: Push changes using PAT
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          git push https://x-access-token:${GH_TOKEN}@github.com/miqflur/miqflur.github.io.git HEAD:main
