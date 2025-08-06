@@ -1,0 +1,11 @@
+---
+title: 'Dominus Empyreus'
+date: 2025-08-06T00:00:00Z
+---
+- **RAP**: 13577229
+- **Value**: 40000000
+- **Demand level**: 0
+- **Trend**: 2
+- **Projected?**: True
+- **Hyped?**: True
+- **Rare?**: True

@@ -1,43 +1,66 @@
-import requests, json, datetime, os
+# fetch_limiteds.py
+
+import requests
+import json
+import datetime
+import os
+import re
 
 API_URL    = "https://www.rolimons.com/itemapi/itemdetails"
 KNOWN_FILE = "known_ids.json"
 POSTS_DIR  = "_posts"
 
 print("🛠️ Starting fetch_limiteds.py")
-resp = requests.get(API_URL, headers={"User-Agent":"Mozilla/5.0"})
+
+# 1) Fetch the full list of limiteds
+resp = requests.get(API_URL, headers={"User-Agent": "Mozilla/5.0"})
 resp.raise_for_status()
 payload = resp.json()
 
-items: dict = payload.get("items", {})
+items = payload.get("items", {})
 print(f"→ Fetched {len(items)} limiteds from itemdetails API")
 
-# Load the set of IDs we've already posted
+# 2) Load the set of IDs we've already posted
 if os.path.exists(KNOWN_FILE):
     with open(KNOWN_FILE, "r") as f:
         known_ids = set(json.load(f))
 else:
     known_ids = set()
 
-# Figure out which IDs are truly new
+# 3) Determine which IDs are new
 current_ids = set(items.keys())
 new_ids     = current_ids - known_ids
 print(f"→ Found {len(new_ids)} new limited(s)")
 
-# Make sure our posts folder exists
+# 4) Ensure the posts directory exists
 os.makedirs(POSTS_DIR, exist_ok=True)
 
-for item_id in sorted(new_ids):
+# 5) Write a Markdown file for each new limited
+for item_id in sorted(new_ids, key=int):
+    # items[item_id] is [name, acronym, rap, value, default, demand, trend, projected, hyped, rare]
     name, acronym, rap, value, default, demand, trend, projected, hyped, rare = items[item_id]
-    # Use today’s date since we don’t have a releaseTime
+
+    # Use today's date (no precise releaseTime available here)
     date = datetime.datetime.utcnow().date().isoformat()
-    slug = name.replace("/", "-").lower().replace(" ", "-")
+
+    # Sanitize and slugify the name: lowercase, hyphens for spaces, strip invalid chars
+    slug = re.sub(r'\s+', '-', name.strip().lower())
+    slug = re.sub(r'[^a-z0-9\-]', '', slug)
+
     filename = f"{date}-{slug}.md"
     path = os.path.join(POSTS_DIR, filename)
 
+    if os.path.exists(path):
+        print(f"– Skipping existing post: {filename}")
+        continue
+
+    # Sanitize title for YAML: escape single quotes
+    safe_name = name.replace("'", "''")
+    title_line = f"title: '{safe_name}'"
+
     print(f"+ Writing post for ID {item_id}: {name}")
     front = f"""---
-title: "{name}"
+{title_line}
 date: {date}T00:00:00Z
 ---
 - **RAP**: {rap}
@@ -51,7 +74,7 @@ date: {date}T00:00:00Z
     with open(path, "w", encoding="utf-8") as f:
         f.write(front)
 
-# Update our known-IDs file
+# 6) Update known_ids.json so we won't repost these next time
 with open(KNOWN_FILE, "w", encoding="utf-8") as f:
     json.dump(list(current_ids), f, indent=2)
 

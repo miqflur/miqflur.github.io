@@ -1,0 +1,11 @@
+---
+title: 'Mrs. Tentacles'
+date: 2025-08-06T00:00:00Z
+---
+- **RAP**: 22804
+- **Value**: 24000
+- **Demand level**: 2
+- **Trend**: 2
+- **Projected?**: True
+- **Hyped?**: True
+- **Rare?**: True
