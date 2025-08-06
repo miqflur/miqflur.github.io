@@ -1,17 +1,26 @@
+# .github/workflows/update.yml
+
 name: Daily Limiteds Update
 
+# Trigger manually or every day at 6 AM UTC
 on:
-  workflow_dispatch:      # manual trigger
+  workflow_dispatch:
   schedule:
-    - cron: '0 6 * * *'   # daily at 6 AM UTC
+    - cron: '0 6 * * *'
+
+# Grant this workflow write access so it can push commits
+permissions:
+  contents: write
 
 jobs:
   update:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -33,6 +42,7 @@ jobs:
 
       - name: Push changes using PAT
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_PAT: ${{ secrets.GH_PAT }}
         run: |
-          git push https://x-access-token:${GH_TOKEN}@github.com/miqflur/miqflur.github.io.git HEAD:main
+          git remote set-url origin https://x-access-token:${GH_PAT}@github.com/${{ github.repository }}.git
+          git push
