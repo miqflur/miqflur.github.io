@@ -1,0 +1,6 @@
+---
+title: 'Ocherous Katana of the Setting Sun'
+date: 2025-08-05T00:00:00Z
+---
+- **RAP**: 23529
+- **Value**: -1

@@ -1,0 +1,6 @@
+---
+title: 'General Protection Fault'
+date: 2025-08-05T00:00:00Z
+---
+- **RAP**: 40457
+- **Value**: 38000

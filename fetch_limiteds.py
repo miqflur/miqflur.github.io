@@ -6,76 +6,84 @@ import datetime
 import os
 import re
 
+# Use the documented www.rolimons.com host for itemdetails
 API_URL    = "https://www.rolimons.com/itemapi/itemdetails"
 KNOWN_FILE = "known_ids.json"
 POSTS_DIR  = "_posts"
+DAYS_BACK  = 7
+
+def slugify(name: str) -> str:
+    s = re.sub(r'\s+', '-', name.strip().lower())
+    return re.sub(r'[^a-z0-9\-]', '', s)
 
 print("🛠️ Starting fetch_limiteds.py")
 
-# 1) Fetch the full list of limiteds
+# 1) Fetch all item details
 resp = requests.get(API_URL, headers={"User-Agent": "Mozilla/5.0"})
 resp.raise_for_status()
-payload = resp.json()
+items = resp.json().get("items", {})
+print(f"→ Fetched {len(items)} limiteds")
 
-items = payload.get("items", {})
-print(f"→ Fetched {len(items)} limiteds from itemdetails API")
-
-# 2) Load the set of IDs we've already posted
+# 2) Load or initialize known_ids (ID → first_seen_date)
 if os.path.exists(KNOWN_FILE):
-    with open(KNOWN_FILE, "r") as f:
-        known_ids = set(json.load(f))
+    with open(KNOWN_FILE, "r", encoding="utf-8") as f:
+        known = json.load(f)
+        if not isinstance(known, dict):
+            known = {}
 else:
-    known_ids = set()
+    known = {}
 
-# 3) Determine which IDs are new
-current_ids = set(items.keys())
-new_ids     = current_ids - known_ids
-print(f"→ Found {len(new_ids)} new limited(s)")
+today_str = datetime.date.today().isoformat()
 
-# 4) Ensure the posts directory exists
-os.makedirs(POSTS_DIR, exist_ok=True)
+# 3) Mark any brand-new IDs with today’s date
+for item_id in items.keys():
+    if item_id not in known:
+        known[item_id] = today_str
 
-# 5) Write a Markdown file for each new limited
-for item_id in sorted(new_ids, key=int):
-    # items[item_id] is [name, acronym, rap, value, default, demand, trend, projected, hyped, rare]
-    name, acronym, rap, value, default, demand, trend, projected, hyped, rare = items[item_id]
+# 4) Save updated known_ids.json
+with open(KNOWN_FILE, "w", encoding="utf-8") as f:
+    json.dump(known, f, indent=2)
 
-    # Use today's date (no precise releaseTime available here)
-    date = datetime.datetime.utcnow().date().isoformat()
+# 5) Compute cutoff for “this week”
+cutoff = datetime.date.today() - datetime.timedelta(days=DAYS_BACK)
 
-    # Sanitize and slugify the name: lowercase, hyphens for spaces, strip invalid chars
-    slug = re.sub(r'\s+', '-', name.strip().lower())
-    slug = re.sub(r'[^a-z0-9\-]', '', slug)
+# 6) Recreate the posts folder (keep .gitkeep if present)
+if os.path.isdir(POSTS_DIR):
+    for fn in os.listdir(POSTS_DIR):
+        if fn not in (".gitkeep",):
+            os.remove(os.path.join(POSTS_DIR, fn))
+else:
+    os.makedirs(POSTS_DIR, exist_ok=True)
 
+# 7) Generate a post for each ID first seen within the last week
+count = 0
+for item_id, first_seen in known.items():
+    first_date = datetime.date.fromisoformat(first_seen)
+    if first_date < cutoff:
+        continue
+
+    # unpack the tuple: [name, acronym, rap, value, default, demand, trend, projected, hyped, rare]
+    name, _, rap, value, *_ = items[item_id]
+
+    date = first_date.isoformat()
+    slug = slugify(name)
     filename = f"{date}-{slug}.md"
     path = os.path.join(POSTS_DIR, filename)
 
-    if os.path.exists(path):
-        print(f"– Skipping existing post: {filename}")
-        continue
-
-    # Sanitize title for YAML: escape single quotes
+    # sanitize title
     safe_name = name.replace("'", "''")
     title_line = f"title: '{safe_name}'"
 
-    print(f"+ Writing post for ID {item_id}: {name}")
     front = f"""---
 {title_line}
 date: {date}T00:00:00Z
 ---
 - **RAP**: {rap}
 - **Value**: {value}
-- **Demand level**: {demand}
-- **Trend**: {trend}
-- **Projected?**: {bool(projected)}
-- **Hyped?**: {bool(hyped)}
-- **Rare?**: {bool(rare)}
 """
     with open(path, "w", encoding="utf-8") as f:
         f.write(front)
 
-# 6) Update known_ids.json so we won't repost these next time
-with open(KNOWN_FILE, "w", encoding="utf-8") as f:
-    json.dump(list(current_ids), f, indent=2)
+    count += 1
 
-print("✅ Done.")
+print(f"✅ Generated {count} post(s) for the last {DAYS_BACK} days.")

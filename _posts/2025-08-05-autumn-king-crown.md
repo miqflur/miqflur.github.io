@@ -1,0 +1,6 @@
+---
+title: 'Autumn King Crown'
+date: 2025-08-05T00:00:00Z
+---
+- **RAP**: 1786
+- **Value**: -1

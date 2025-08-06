@@ -1,0 +1,6 @@
+---
+title: 'Stickmasterluke''s Peanut Butter Sparkle Time'
+date: 2025-08-05T00:00:00Z
+---
+- **RAP**: 112033
+- **Value**: 100000

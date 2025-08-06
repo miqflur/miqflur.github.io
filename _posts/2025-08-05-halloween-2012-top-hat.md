@@ -1,0 +1,6 @@
+---
+title: 'Halloween 2012 Top Hat'
+date: 2025-08-05T00:00:00Z
+---
+- **RAP**: 2578
+- **Value**: -1

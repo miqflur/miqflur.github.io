@@ -1,0 +1,6 @@
+---
+title: 'Blinking Egg of Relocation'
+date: 2025-08-05T00:00:00Z
+---
+- **RAP**: 1274
+- **Value**: -1

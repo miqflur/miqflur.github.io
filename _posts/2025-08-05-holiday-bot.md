@@ -1,0 +1,6 @@
+---
+title: 'Holiday Bot'
+date: 2025-08-05T00:00:00Z
+---
+- **RAP**: 11986
+- **Value**: -1
