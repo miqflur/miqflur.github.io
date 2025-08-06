@@ -1,17 +1,20 @@
 name: Daily Limiteds Update
 
 on:
-  workflow_dispatch:      # manual trigger
+  workflow_dispatch:
   schedule:
-    - cron: '0 6 * * *'   # daily at 6 AM UTC
+    - cron: '0 6 * * *'
 
 jobs:
   update:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
           fetch-depth: 0
 
       - name: Set up Python
@@ -19,7 +22,7 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Install requests
+      - name: Install dependencies
         run: pip install requests
 
       - name: Fetch latest limiteds
@@ -32,10 +35,5 @@ jobs:
           git add _posts
           git commit -m "chore: update limiteds $(date -u +'%Y-%m-%d')" || echo "No new posts"
 
-      - name: Push changes using GITHUB_TOKEN
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # rewrite origin to include the token
-          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/miqflur/miqflur.github.io.git
-          git push origin main
+      - name: Push changes
+        run: git push
